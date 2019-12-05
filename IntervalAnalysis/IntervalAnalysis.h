@@ -1,0 +1,8 @@
+//
+// Created by Youyou Tu on 2019-12-04.
+//
+
+#ifndef LLVM_TUTOR_INTERVALANALYSIS_H
+#define LLVM_TUTOR_INTERVALANALYSIS_H
+
+#endif //LLVM_TUTOR_INTERVALANALYSIS_H
