@@ -51,23 +51,64 @@ struct HelloWorld : PassInfoMixin<HelloWorld> {
   // Main entry point, takes IR unit to run the pass on (&F) and the
   // corresponding pass manager (to be queried if need be)
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-    visitor(F);
+      visitor(F);
+      // Initialize the worklist to all of the instructions ready to process...
+      SmallPtrSet<Instruction *, 16> WorkList;
+      // The SmallVector of WorkList ensures that we do iteration at stable order.
+      // We use two containers rather than one SetVector, since remove is
+      // linear-time, and we don't care enough to remove from Vec.
+      SmallVector<Instruction *, 16> WorkListVec;
+      for (Instruction &I : instructions(&F)) {
+//          errs() << I << "\n";
+
+          WorkList.insert(&I);
+          WorkListVec.push_back(&I);
+      }
+
+      while (!WorkList.empty()) {
+          for (auto *I : WorkListVec) {
+              errs() << "Instruction I " << *I << "\n";
+              /*
+              for (const Use &OpU : I->operands()) {
+                  // Fold the Instruction's operands.
+                  errs() << *OpU << "\n";
+              }
+               */
+
+//          for(auto op= I->op_begin(); op != I->op_end(); op++){
+//              Value* v = op->get();
+//              errs() << v->getName() << "\n";
+//          }
+            if (auto *PN = dyn_cast<PHINode>(I)) {
+                errs() << "phi node" << "\n";
+//                for (Value *Incoming : PN->incoming_values()) {
+//                    // If the incoming value is undef then skip it.  Note that while we could
+//                    // skip the value if it is equal to the phi node itself we choose not to
+//                    // because that would break the rule that constant folding only applies if
+//                    // all operands are constants.
+//                    errs() << *Incoming << "\n";
+//                }
+            }
+
+
+              WorkList.erase(I); // Remove element from the worklist...
+
+              // Add all of the users of this instruction to the worklist, they might
+              // be constant propagatable now...
+//              for (User *U : I->users()) {
+//                  errs() << "all uses" << "\n";
+//                  errs() << *U << "\n";
+//                  // If user not in the set, then add it to the vector.
+//              }
+
+
+
+          }
+      }
     return PreservedAnalyses::all();
   }
 };
 
-// Legacy PM implementation
-struct LegacyHelloWorld : public FunctionPass {
-  static char ID;
-  LegacyHelloWorld() : FunctionPass(ID) {}
-  // Main entry point - the name conveys what unit of IR this is to be run on.
-  bool runOnFunction(Function &F) override {
-    visitor(F);
-    // Doesn't modify the input unit of IR, hence 'false'
-    return false;
-  }
-};
-} // namespace
 
 //-----------------------------------------------------------------------------
 // New PM Registration
@@ -94,34 +135,6 @@ extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
   return getHelloWorldPluginInfo();
 }
+}
 
-//-----------------------------------------------------------------------------
-// Legacy PM Registration
-//-----------------------------------------------------------------------------
-// The address of this variable is used to identify the pass. The actual value
-// doesn't matter.
-char LegacyHelloWorld::ID = 0;
 
-// Register the pass - with this 'opt' will be able to recognize
-// LegacyHelloWorld when added to the pass pipeline on the command line, i.e.
-// via '--legacy-hello-world'
-static RegisterPass<LegacyHelloWorld>
-    X("legacy-hello-world", "Hello World Pass",
-      true,  // This pass doesn't modify the CFG => true
-      false  // This pass is not a pure analysis pass => false
-    );
-
-// Register LegacyHelloWorld as a step of an existing pipeline. The insertion
-// point is set to 'EP_EarlyAsPossible', which means that LegacyHelloWorld will
-// be run automatically at '-O{0|1|2|3}'.
-#ifndef LT_LEGACY_SKIP_PIPELINE_REGISTRATION
-// This trips 'opt' installed via HomeBrew. It's a known issues:
-//    https://github.com/sampsyo/llvm-pass-skeleton/issues/7
-// I've tried all of the suggestions, but no luck. Locally I recommend either
-// building from sources or commenting this out.
-// Note: AFAIK, this is Mac OS only problem.
-static llvm::RegisterStandardPasses RegisterHelloWorld(
-    llvm::PassManagerBuilder::EP_EarlyAsPossible,
-    [](const llvm::PassManagerBuilder &Builder,
-       llvm::legacy::PassManagerBase &PM) { PM.add(new LegacyHelloWorld()); });
-#endif
