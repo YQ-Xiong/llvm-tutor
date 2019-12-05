@@ -44,8 +44,8 @@ install:
   - pip install --user lit
 
 script:
-  # Build HelloWorld as a standalone project
-  - cd HelloWorld
+  # Build IntervalAnalysis as a standalone project
+  - cd IntervalAnalysis
   - mkdir build && cd build
   - cmake -DLT_LEGACY_SKIP_PIPELINE_REGISTRATION=On -DLT_LLVM_INSTALL_DIR="$LLVM_DIR"  ../
   - make -j4

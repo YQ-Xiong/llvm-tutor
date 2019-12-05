@@ -3,7 +3,7 @@
 //      input_for_hello.c
 //
 // DESCRIPTION:
-//      Sample input file for the HelloWorld pass.
+//      Sample input file for the IntervalAnalysis pass.
 //
 // License: MIT
 //=============================================================================

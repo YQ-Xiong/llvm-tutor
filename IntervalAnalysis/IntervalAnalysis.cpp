@@ -1,6 +1,6 @@
 //=============================================================================
 // FILE:
-//    HelloWorld.cpp
+//    IntervalAnalysis.cpp
 //
 // DESCRIPTION:
 //    Visits all functions in a module, prints their names and the number of
@@ -11,13 +11,13 @@
 //
 // USAGE:
 //    1. Legacy pass manager
-//      # Request `HelloWorld` via a dedicated flag:
-//      opt -load libHelloWorld.dylib -legacy-hello-world -disable-output <input-llvm-file>
-//      # `HelloWorld` will be executed as part of the optimisation pipelines
-//      opt -load libHelloWorld.dylib -O{0|1|2|3} -disable-output <input-llvm-file>
+//      # Request `IntervalAnalysis` via a dedicated flag:
+//      opt -load libIntervalAnalysis.dylib -legacy-hello-world -disable-output <input-llvm-file>
+//      # `IntervalAnalysis` will be executed as part of the optimisation pipelines
+//      opt -load libIntervalAnalysis.dylib -O{0|1|2|3} -disable-output <input-llvm-file>
 //    2. New pass manager
 //      # Define your pass pipeline via the '-passes' flag
-//      opt -load-pass-plugin=libHelloWorld.dylib -passes="hello-world" -disable-output <input-llvm-file>
+//      opt -load-pass-plugin=libIntervalAnalysis.dylib -passes="hello-world" -disable-output <input-llvm-file>
 //
 //
 // License: MIT
@@ -33,7 +33,7 @@
 using namespace llvm;
 
 //-----------------------------------------------------------------------------
-// HelloWorld implementation
+// IntervalAnalysis implementation
 //-----------------------------------------------------------------------------
 // No need to expose the internals of the pass to the outside world - keep
 // everything in an anonymous namespace.
@@ -47,7 +47,7 @@ void visitor(Function &F) {
 }
 
 // New PM implementation
-struct HelloWorld : PassInfoMixin<HelloWorld> {
+struct IntervalAnalysis : PassInfoMixin<IntervalAnalysis> {
   // Main entry point, takes IR unit to run the pass on (&F) and the
   // corresponding pass manager (to be queried if need be)
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
@@ -113,14 +113,14 @@ struct HelloWorld : PassInfoMixin<HelloWorld> {
 //-----------------------------------------------------------------------------
 // New PM Registration
 //-----------------------------------------------------------------------------
-llvm::PassPluginLibraryInfo getHelloWorldPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "HelloWorld", LLVM_VERSION_STRING,
+llvm::PassPluginLibraryInfo getIntervalAnalysisPluginInfo() {
+  return {LLVM_PLUGIN_API_VERSION, "IntervalAnalysis", LLVM_VERSION_STRING,
           [](PassBuilder &PB) {
             PB.registerPipelineParsingCallback(
                 [](StringRef Name, FunctionPassManager &FPM,
                    ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "hello-world") {
-                    FPM.addPass(HelloWorld());
+                  if (Name == "interval") {
+                    FPM.addPass(IntervalAnalysis());
                     return true;
                   }
                   return false;
@@ -129,11 +129,11 @@ llvm::PassPluginLibraryInfo getHelloWorldPluginInfo() {
 }
 
 // This is the core interface for pass plugins - with this 'opt' will be able
-// to recognize HelloWorld when added to the pass pipeline on the command line,
+// to recognize IntervalAnalysis when added to the pass pipeline on the command line,
 // i.e. via '-passes=hello-world'
 extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
-  return getHelloWorldPluginInfo();
+  return getIntervalAnalysisPluginInfo();
 }
 }
 

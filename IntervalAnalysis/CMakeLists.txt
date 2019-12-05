@@ -12,7 +12,7 @@ list(APPEND CMAKE_PREFIX_PATH "${LT_LLVM_INSTALL_DIR}/lib/cmake/llvm/")
 
 find_package(LLVM 9.0.0 REQUIRED CONFIG)
 
-# HelloWorld includes headers from LLVM - update the include paths accordingly
+# IntervalAnalysis includes headers from LLVM - update the include paths accordingly
 include_directories(${LLVM_INCLUDE_DIRS})
 
 #===============================================================================
@@ -42,9 +42,9 @@ endif()
 #===============================================================================
 # 3. ADD THE TARGET
 #===============================================================================
-add_library(HelloWorld SHARED HelloWorld.cpp)
+add_library(IntervalAnalysis SHARED IntervalAnalysis.cpp)
 
 # Allow undefined symbols in shared objects on Darwin (this is the default
 # behaviour on Linux)
-target_link_libraries(HelloWorld
+target_link_libraries(IntervalAnalysis
   "$<$<PLATFORM_ID:Darwin>:-undefined dynamic_lookup>")
