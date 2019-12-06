@@ -28,7 +28,7 @@ struct Interval{
 };
 
 
-map<Instruction*, Interval> intervalMap;
+extern map<Instruction*, Interval> intervalMap;
 
 
-Interval IntervalFoldInstruction(Instruction *I );
+Interval* IntervalFoldInstruction(Instruction *I );

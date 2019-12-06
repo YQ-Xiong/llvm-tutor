@@ -4,9 +4,15 @@
 #include "intervalFolding.h"
 using namespace llvm;
 
-Interval *llvm::IntervalFoldInstruction(Instruction *I ){
+Interval* IntervalFoldInstruction(Instruction *I ){
     // check if terminator (ret),
     // first check phi node
+
+
+
+    if(const auto *SI = dyn_cast<StoreInst>(I)){
+        //Value* v =  &SI->getPointerOperand();
+    }
 
 
 
@@ -14,7 +20,7 @@ Interval *llvm::IntervalFoldInstruction(Instruction *I ){
 
     for(const Use &OpU : I->operands()){
         // *some instruction has only one operand
-        Opcode oc = I.getOpcode();
+        unsigned oc = I->getOpcode();
         if(Instruction::isUnaryOp(oc)){
             return nullptr;
         }
@@ -37,7 +43,7 @@ Interval *llvm::IntervalFoldInstruction(Instruction *I ){
     }
 
     // Insert
-    if(auto *IVI = dyn_cast<InsertValue>(I)){
+    if(auto *IVI = dyn_cast<InsertValueInst>(I)){
 
     }
 
@@ -51,4 +57,6 @@ Interval *llvm::IntervalFoldInstruction(Instruction *I ){
     return nullptr;
 }
 
-
+//Interval plus(Interval a, Interval b){
+//
+//}

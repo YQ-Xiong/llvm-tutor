@@ -33,42 +33,52 @@
 namespace {
 
 // This method implements what the pass does
-void visitor(Function &F) {
-    errs() << "Visiting: ";
-    errs() << F.getName() << " (takes ";
-    errs() << F.arg_size() << " args)\n";
-}
+    void visitor(Function &F) {
+        errs() << "Visiting: ";
+        errs() << F.getName() << " (takes ";
+        errs() << F.arg_size() << " args)\n";
+    }
 
 // New PM implementation
-struct IntervalAnalysis : PassInfoMixin<IntervalAnalysis> {
-  // Main entry point, takes IR unit to run the pass on (&F) and the
-  // corresponding pass manager (to be queried if need be)
-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
-      visitor(F);
-      // Initialize the worklist to all of the instructions ready to process...
-      SmallPtrSet<Instruction *, 16> WorkList;
-      // The SmallVector of WorkList ensures that we do iteration at stable order.
-      // We use two containers rather than one SetVector, since remove is
-      // linear-time, and we don't care enough to remove from Vec.
-      SmallVector<Instruction *, 16> WorkListVec;
-      for (Instruction &I : instructions(&F)) {
+    struct IntervalAnalysis : PassInfoMixin<IntervalAnalysis> {
+        // Main entry point, takes IR unit to run the pass on (&F) and the
+        // corresponding pass manager (to be queried if need be)
+        PreservedAnalyses run(Function &F, FunctionAnalysisManager &) {
+            visitor(F);
+            // Initialize the worklist to all of the instructions ready to process...
+            SmallPtrSet<Instruction *, 16> WorkList;
+            // The SmallVector of WorkList ensures that we do iteration at stable order.
+            // We use two containers rather than one SetVector, since remove is
+            // linear-time, and we don't care enough to remove from Vec.
+            SmallVector<Instruction *, 16> WorkListVec;
+            for (Instruction &I : instructions(&F)) {
 //          errs() << I << "\n";
-          Interval tmp = {INT_MIN, INT_MAX};
-          intervalMap.insert(make_pair(&I, tmp));
+                Interval tmp = {INT_MIN, INT_MAX};
+                intervalMap.insert(make_pair(&I, tmp));
 
-          WorkList.insert(&I);
-          WorkListVec.push_back(&I);
-      }
+                WorkList.insert(&I);
+                WorkListVec.push_back(&I);
+            }
 
-      while (!WorkList.empty()) {
-          for (auto *I : WorkListVec) {
-              errs() << "Instruction I " << *I << "\n";
+            while (!WorkList.empty()) {
+                for (auto *I : WorkListVec) {
+                    errs() << "Instruction I " << *I << "\n";
 
-              for (const Use &OpU : I->operands()) {
-                  // Fold the Instruction's operands.
-                  errs() << "operand";
-                  errs() << *OpU << "\n";
-              }
+                    for (const Use &OpU : I->operands()) {
+                        // Fold the Instruction's operands.
+                        errs() << "operand";
+                        errs() << *OpU << "\n";
+                    }
+
+                    if(const auto *SI = dyn_cast<StoreInst>(I)){
+                        errs() << "pointer";
+                        //Use &PointerU = SI.getPointerOperand();
+                        const Instruction *pointer = cast<Instruction>(SI->getPointerOperand());
+                        errs() << *pointer << "\n";
+
+                        errs() << "value";
+                        errs() << *SI->getValueOperand() << "\n";
+                    }
 
 
 //          for(auto op= I->op_begin(); op != I->op_end(); op++){
@@ -87,10 +97,10 @@ struct IntervalAnalysis : PassInfoMixin<IntervalAnalysis> {
 //            }
 
 
-              WorkList.erase(I); // Remove element from the worklist...
+                    WorkList.erase(I); // Remove element from the worklist...
 
-              // Add all of the users of this instruction to the worklist, they might
-              // be constant propagatable now...
+                    // Add all of the users of this instruction to the worklist, they might
+                    // be constant propagatable now...
 //              for (User *U : I->users()) {
 //                  errs() << "all uses" << "\n";
 //                  errs() << *U << "\n";
@@ -99,38 +109,38 @@ struct IntervalAnalysis : PassInfoMixin<IntervalAnalysis> {
 
 
 
-          }
-      }
-    return PreservedAnalyses::all();
-  }
-};
+                }
+            }
+            return PreservedAnalyses::all();
+        }
+    };
 
 
 //-----------------------------------------------------------------------------
 // New PM Registration
 //-----------------------------------------------------------------------------
-llvm::PassPluginLibraryInfo getIntervalAnalysisPluginInfo() {
-  return {LLVM_PLUGIN_API_VERSION, "IntervalAnalysis", LLVM_VERSION_STRING,
-          [](PassBuilder &PB) {
-            PB.registerPipelineParsingCallback(
-                [](StringRef Name, FunctionPassManager &FPM,
-                   ArrayRef<PassBuilder::PipelineElement>) {
-                  if (Name == "interval") {
-                    FPM.addPass(IntervalAnalysis());
-                    return true;
-                  }
-                  return false;
-                });
-          }};
-}
+    llvm::PassPluginLibraryInfo getIntervalAnalysisPluginInfo() {
+        return {LLVM_PLUGIN_API_VERSION, "IntervalAnalysis", LLVM_VERSION_STRING,
+                [](PassBuilder &PB) {
+                    PB.registerPipelineParsingCallback(
+                            [](StringRef Name, FunctionPassManager &FPM,
+                               ArrayRef<PassBuilder::PipelineElement>) {
+                                if (Name == "interval") {
+                                    FPM.addPass(IntervalAnalysis());
+                                    return true;
+                                }
+                                return false;
+                            });
+                }};
+    }
 
 // This is the core interface for pass plugins - with this 'opt' will be able
 // to recognize IntervalAnalysis when added to the pass pipeline on the command line,
 // i.e. via '-passes=hello-world'
-extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
-llvmGetPassPluginInfo() {
-  return getIntervalAnalysisPluginInfo();
-}
+    extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
+    llvmGetPassPluginInfo() {
+        return getIntervalAnalysisPluginInfo();
+    }
 }
 
 
