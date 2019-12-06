@@ -22,15 +22,8 @@
 //
 // License: MIT
 //=============================================================================
-#include "llvm/IR/Function.h"
-#include "llvm/IR/LegacyPassManager.h"
-#include "llvm/Pass.h"
-#include "llvm/Passes/PassBuilder.h"
-#include "llvm/Passes/PassPlugin.h"
-#include "llvm/Support/raw_ostream.h"
-#include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#include "intervalFolding.h"
 
-using namespace llvm;
 
 //-----------------------------------------------------------------------------
 // IntervalAnalysis implementation
@@ -60,6 +53,8 @@ struct IntervalAnalysis : PassInfoMixin<IntervalAnalysis> {
       SmallVector<Instruction *, 16> WorkListVec;
       for (Instruction &I : instructions(&F)) {
 //          errs() << I << "\n";
+          Interval tmp = {INT_MIN, INT_MAX};
+          intervalMap.insert(make_pair(&I, tmp));
 
           WorkList.insert(&I);
           WorkListVec.push_back(&I);
@@ -68,27 +63,28 @@ struct IntervalAnalysis : PassInfoMixin<IntervalAnalysis> {
       while (!WorkList.empty()) {
           for (auto *I : WorkListVec) {
               errs() << "Instruction I " << *I << "\n";
-              /*
+
               for (const Use &OpU : I->operands()) {
                   // Fold the Instruction's operands.
+                  errs() << "operand";
                   errs() << *OpU << "\n";
               }
-               */
+
 
 //          for(auto op= I->op_begin(); op != I->op_end(); op++){
 //              Value* v = op->get();
 //              errs() << v->getName() << "\n";
 //          }
-            if (auto *PN = dyn_cast<PHINode>(I)) {
-                errs() << "phi node" << "\n";
-//                for (Value *Incoming : PN->incoming_values()) {
-//                    // If the incoming value is undef then skip it.  Note that while we could
-//                    // skip the value if it is equal to the phi node itself we choose not to
-//                    // because that would break the rule that constant folding only applies if
-//                    // all operands are constants.
-//                    errs() << *Incoming << "\n";
-//                }
-            }
+//            if (auto *PN = dyn_cast<PHINode>(I)) {
+//                errs() << "phi node" << "\n";
+////                for (Value *Incoming : PN->incoming_values()) {
+////                    // If the incoming value is undef then skip it.  Note that while we could
+////                    // skip the value if it is equal to the phi node itself we choose not to
+////                    // because that would break the rule that constant folding only applies if
+////                    // all operands are constants.
+////                    errs() << *Incoming << "\n";
+////                }
+//            }
 
 
               WorkList.erase(I); // Remove element from the worklist...
