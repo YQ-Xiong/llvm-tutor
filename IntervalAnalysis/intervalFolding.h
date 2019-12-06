@@ -26,3 +26,4 @@ struct Interval{
 };
 
 Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interval> *intervalMap);
+

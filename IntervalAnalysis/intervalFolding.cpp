@@ -4,8 +4,15 @@
 #include "intervalFolding.h"
 
 Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interval> *intervalMap){
+
     // check if terminator (ret),
     // first check phi node
+
+
+
+    if(const auto *SI = dyn_cast<StoreInst>(I)){
+        //Value* v =  &SI->getPointerOperand();
+    }
 
 
 
@@ -19,6 +26,12 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 //    }
 
     auto oc = I->getOpcode();
+    for(const Use &OpU : I->operands()){
+        // *some instruction has only one operand
+        unsigned oc = I->getOpcode();
+        if(Instruction::isUnaryOp(oc)){
+            return nullptr;
+        }
 
     // unary op
     if(Instruction::isUnaryOp(oc)){
@@ -72,4 +85,6 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
     return nullptr;
 }
 
-
+//Interval plus(Interval a, Interval b){
+//
+//}
