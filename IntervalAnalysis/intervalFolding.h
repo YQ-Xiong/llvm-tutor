@@ -20,15 +20,9 @@ using namespace llvm;
 using namespace std;
 
 
-
-
 struct Interval{
     int low;
     int high;
 };
 
-
-map<Instruction*, Interval> intervalMap;
-
-
-Interval IntervalFoldInstruction(Instruction *I );
+Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interval> *intervalMap);

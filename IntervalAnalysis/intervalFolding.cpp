@@ -2,27 +2,48 @@
 // Created by Youyou Tu on 2019-12-04.
 //
 #include "intervalFolding.h"
-using namespace llvm;
 
-Interval *llvm::IntervalFoldInstruction(Instruction *I ){
+Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interval> *intervalMap){
     // check if terminator (ret),
     // first check phi node
 
 
 
     // second calculate operands
+//
+//    SmallVector<Use *, 8> Ops;
+//
+//    for(const Use &OpU : I->operands()){
+//
+//        Ops.push_back(OpU)
+//    }
 
-    for(const Use &OpU : I->operands()){
-        // *some instruction has only one operand
-        Opcode oc = I.getOpcode();
-        if(Instruction::isUnaryOp(oc)){
-            return nullptr;
-        }
+    auto oc = I->getOpcode();
 
-        if(Instruction::isBinaryOp(oc)){
-            return nullptr;
-        }
+    // unary op
+    if(Instruction::isUnaryOp(oc)){
+        return nullptr;
     }
+
+    // binary op
+//    if(Instruction::isBinaryOp(oc)){
+//        // (1,4) + ()
+//        if (oc == Instruction::And) {
+//            Interval interval0 = intervalMap.find(dyn_cast<Instruction>(Ops[0]));
+//            errs() << "Interval 0" << interval0 << "\n";
+//            Interval interval1 = intervalMap.find(Ops[1]);
+//        }
+//
+//        return nullptr;
+//    }
+
+
+    // store instruction
+
+    if (const auto *SI = dyn_cast<StoreInst>(I)) {
+
+    }
+
 
     // compare instruction
 
@@ -37,7 +58,7 @@ Interval *llvm::IntervalFoldInstruction(Instruction *I ){
     }
 
     // Insert
-    if(auto *IVI = dyn_cast<InsertValue>(I)){
+    if(auto *IVI = dyn_cast<InsertValueInst>(I)){
 
     }
 
