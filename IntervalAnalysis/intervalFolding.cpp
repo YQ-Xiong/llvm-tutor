@@ -17,26 +17,27 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
 
     // second calculate operands
-//
+
 //    SmallVector<Use *, 8> Ops;
 //
 //    for(const Use &OpU : I->operands()){
 //
-//        Ops.push_back(OpU)
+//        Ops.push_back(&OpU)
 //    }
 
-    auto oc = I->getOpcode();
-    for(const Use &OpU : I->operands()){
-        // *some instruction has only one operand
-        unsigned oc = I->getOpcode();
-        if(Instruction::isUnaryOp(oc)){
-            return nullptr;
-        }
 
-    // unary op
-    if(Instruction::isUnaryOp(oc)){
-        return nullptr;
-    }
+//    auto oc = I->getOpcode();
+//    for(const Use &OpU : I->operands()){
+//        // *some instruction has only one operand
+//        unsigned oc = I->getOpcode();
+//        if(Instruction::isUnaryOp(oc)){
+//            return nullptr;
+//        }
+//
+//    // unary op
+//    if(Instruction::isUnaryOp(oc)){
+//        return nullptr;
+//    }
 
     // binary op
 //    if(Instruction::isBinaryOp(oc)){
@@ -52,10 +53,6 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
 
     // store instruction
-
-    if (const auto *SI = dyn_cast<StoreInst>(I)) {
-
-    }
 
 
     // compare instruction

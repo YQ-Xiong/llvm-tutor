@@ -42,7 +42,7 @@ endif()
 #===============================================================================
 # 3. ADD THE TARGET
 #===============================================================================
-add_library(IntervalAnalysis SHARED IntervalAnalysis.cpp)
+add_library(IntervalAnalysis SHARED IntervalAnalysis.cpp intervalFolding.cpp)
 
 # Allow undefined symbols in shared objects on Darwin (this is the default
 # behaviour on Linux)

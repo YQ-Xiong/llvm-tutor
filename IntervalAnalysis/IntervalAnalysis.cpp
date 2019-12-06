@@ -64,6 +64,7 @@ namespace {
             while (!WorkList.empty()) {
                 for (auto *I : WorkListVec) {
                     errs() << "Instruction I " << *I << "\n";
+                    IntervalFoldInstruction(I, &intervalMap);
 
                     for (const Use &OpU : I->operands()) {
                         // Fold the Instruction's operands.
