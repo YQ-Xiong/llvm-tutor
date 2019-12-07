@@ -21,8 +21,8 @@ using namespace std;
 
 
 struct Interval{
-    int low;
-    int high;
+    int64_t low;
+    int64_t high;
 };
 
 Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interval> *intervalMap);

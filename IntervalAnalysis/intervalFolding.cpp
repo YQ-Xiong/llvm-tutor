@@ -10,8 +10,31 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
 
 
-    if(const auto *SI = dyn_cast<StoreInst>(I)){
-        //Value* v =  &SI->getPointerOperand();
+    if( auto *SI = dyn_cast<StoreInst>(I)){
+        // there are two cases of store instruction
+        // case 1: store instruction i32 %1, one integer, one variable
+        // case 2: store instruction %2 %3, two variables
+
+
+        auto value = SI->getValueOperand();
+        Instruction* pointer = cast<Instruction>(SI->getPointerOperand());
+        Interval i;
+        if(isa<ConstantInt>(value)){ //case
+            auto* CI = cast<ConstantInt>(value);
+            int64_t num = CI->getSExtValue();
+            i = {num, num};
+            intervalMap->insert(make_pair(pointer, i));
+
+            
+        }else{  //case 2
+            // store the value of previous variable into current variable
+            const Instruction* valueInst = cast<Instruction>(value);
+
+            if(intervalMap->count(valueInst)){
+                i = intervalMap->lookup(valueInst);
+                intervalMap->insert(make_pair(pointer, i));
+            }
+        }
     }
 
 
