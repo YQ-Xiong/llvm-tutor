@@ -7,6 +7,7 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
     // check if terminator (ret),
     // first check phi node
+    errs() << I << "\n";
 
 
 
@@ -23,20 +24,55 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
             auto* CI = cast<ConstantInt>(value);
             int64_t num = CI->getSExtValue();
             i = {num, num};
-            intervalMap->insert(make_pair(pointer, i));
-
-            
-        }else{  //case 2
-            // store the value of previous variable into current variable
-            const Instruction* valueInst = cast<Instruction>(value);
-
-            if(intervalMap->count(valueInst)){
-                i = intervalMap->lookup(valueInst);
+            if(intervalMap->count(pointer)) {
+                intervalMap->erase(pointer);
+                intervalMap->insert(make_pair(pointer, i));
+            }else{
                 intervalMap->insert(make_pair(pointer, i));
             }
+            errs() << pointer << "\t" << "value:"<< num << "\n";
+
+            
+        }else {  //case 2
+            // store the value of previous variable into current variable
+            const Instruction *valueInst = cast<Instruction>(value);
+
+            if (intervalMap->count(valueInst)) {
+                i = intervalMap->lookup(valueInst);
+                if(intervalMap->count(pointer)) {
+                    intervalMap->erase(pointer);
+                    intervalMap->insert(make_pair(pointer, i));
+                }else{
+                    intervalMap->insert(make_pair(pointer, i));
+                }
+                errs() << pointer << "\t" << "value:" << i.high << "\n";
+            }else{
+                errs() << "error in store instruction";
+            }
+
         }
     }
 
+    if(auto *LI = dyn_cast<LoadInst>(I)){
+        Instruction* pointer = cast<Instruction>(LI->getPointerOperand());
+        Interval i;
+        if(intervalMap->count(pointer)){
+            i = intervalMap->lookup(pointer);
+            intervalMap->insert(make_pair(LI, i));
+            if(intervalMap->count(LI)) {
+                intervalMap->erase(LI);
+                intervalMap->insert(make_pair(LI, i));
+            }else{
+                intervalMap->insert(make_pair(LI, i));
+            }
+
+            errs() << LI << "\t" << "load value:"<< intervalMap->lookup(LI).high << "\n";
+        }else{
+            errs() << "error in load instruction";
+        }
+
+
+    }
 
 
     // second calculate operands
@@ -45,15 +81,15 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
     for(Use &OpU : I->operands()){
 //        Instruction *s = dyn_cast<Instruction>(OpU);
-        errs() << "Use " << *OpU << "\n";
+        //errs() << "Use " << *OpU << "\n";
         Ops.push_back(&OpU);
     }
 
     unsigned oc = I->getOpcode();
-    errs() << "opcode :" << oc << "\n";
+    //errs() << "opcode :" << oc << "\n";
     // binary op
     if(Instruction::isBinaryOp(oc)){
-        errs() << "Binary Opcode" << "\n";
+        //errs() << "Binary Opcode" << "\n";
 
         int low0; int high0; int low1; int high1;
         // handle the case that operand 0 is constant
@@ -79,7 +115,7 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
         // handle the case that operand 1 is constant
         if (isa<ConstantInt>(Ops[1])) {
             if (auto *CI = dyn_cast<ConstantInt>(Ops[1])) {
-                errs() << "value" << "\n";
+                //errs() << "value" << "\n";
                 int64_t v = CI->getSExtValue();
                 errs() << v << "\n";
 
