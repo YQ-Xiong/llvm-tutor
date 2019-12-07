@@ -49,6 +49,55 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
         Ops.push_back(&OpU);
     }
 
+//    for(const Use &OpU : I->operands()){
+//        // *some instruction has only one operand
+//        unsigned oc = I->getOpcode();
+//        if(Instruction::isUnaryOp(oc)){
+//            return nullptr;
+//        }
+//
+//    // unary op
+//    if(Instruction::isUnaryOp(oc)){
+//        return nullptr;
+//    }
+
+
+
+
+    // store instruction
+
+
+    // compare instruction
+
+    if(const auto *CI = dyn_cast<CmpInst>(I)){
+
+    }
+
+    // load
+
+    if(const auto *LI = dyn_cast<LoadInst>(I)){
+
+    }
+
+    // Insert
+    if(auto *IVI = dyn_cast<InsertValueInst>(I)){
+
+    }
+
+    // extract
+
+    if(auto *EVI = dyn_cast<ExtractValueInst>(I)){
+
+    }
+
+    // finally return foldInstOperands helper
+    return foldInstOperands(I, Ops, intervalMap);
+
+}
+
+
+Interval FoldOperator(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<Instruction*, Interval> *intervalMap) {
+
     unsigned oc = I->getOpcode();
     errs() << "opcode :" << oc << "\n";
     // binary op
@@ -99,6 +148,7 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
             Interval interval_new = plusInterval(low0, high0, low1, high1);
             intervalMap->insert(make_pair(I, interval_new));
+            return interval_new;
         }
 
         // Multiply Instruction
@@ -106,60 +156,13 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
             Interval interval_new = mulInterval(low0, high0, low1, high1);
             intervalMap->insert(make_pair(I, interval_new));
+            return interval_new;
 
         }
 
-
-
-        //
-
         return nullptr;
-    }
-
-
-//    for(const Use &OpU : I->operands()){
-//        // *some instruction has only one operand
-//        unsigned oc = I->getOpcode();
-//        if(Instruction::isUnaryOp(oc)){
-//            return nullptr;
-//        }
-//
-//    // unary op
-//    if(Instruction::isUnaryOp(oc)){
-//        return nullptr;
-//    }
-
-
-
-
-    // store instruction
-
-
-    // compare instruction
-
-    if(const auto *CI = dyn_cast<CmpInst>(I)){
 
     }
-
-    // load
-
-    if(const auto *LI = dyn_cast<LoadInst>(I)){
-
-    }
-
-    // Insert
-    if(auto *IVI = dyn_cast<InsertValueInst>(I)){
-
-    }
-
-    // extract
-
-    if(auto *EVI = dyn_cast<ExtractValueInst>(I)){
-
-    }
-
-    // finally return foldInstOperands helper
-    return nullptr;
 }
 
 int mulBounded(int op1, int op2) {
