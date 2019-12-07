@@ -27,3 +27,6 @@ struct Interval{
 
 Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interval> *intervalMap);
 
+int mulBounded(int op1, int op2);
+Interval mulInterval(int low0, int high0, int low1, int high1);
+Interval plusInterval(int low0, int high0, int low1, int high1);

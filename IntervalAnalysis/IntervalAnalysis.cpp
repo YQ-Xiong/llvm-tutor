@@ -68,18 +68,18 @@ namespace {
 
                     for (const Use &OpU : I->operands()) {
                         // Fold the Instruction's operands.
-                        errs() << "operand";
-                        errs() << *OpU << "\n";
+//                        errs() << "operand";
+//                        errs() << *OpU << "\n";
                     }
 
                     if(const auto *SI = dyn_cast<StoreInst>(I)){
-                        errs() << "pointer";
+//                        errs() << "pointer";
                         //Use &PointerU = SI.getPointerOperand();
                         const Instruction *pointer = cast<Instruction>(SI->getPointerOperand());
-                        errs() << *pointer << "\n";
-
-                        errs() << "value";
-                        errs() << *SI->getValueOperand() << "\n";
+//                        errs() << *pointer << "\n";
+//
+//                        errs() << "value";
+//                        errs() << *SI->getValueOperand() << "\n";
                     }
 
 

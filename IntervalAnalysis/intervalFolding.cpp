@@ -18,15 +18,82 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
     // second calculate operands
 
-//    SmallVector<Use *, 8> Ops;
-//
-//    for(const Use &OpU : I->operands()){
-//
-//        Ops.push_back(&OpU)
-//    }
+    SmallVector<Use*, 8> Ops;
+
+    for(Use &OpU : I->operands()){
+//        Instruction *s = dyn_cast<Instruction>(OpU);
+        errs() << "Use " << *OpU << "\n";
+        Ops.push_back(&OpU);
+    }
+
+    unsigned oc = I->getOpcode();
+    errs() << "opcode :" << oc << "\n";
+    // binary op
+    if(Instruction::isBinaryOp(oc)){
+        errs() << "Binary Opcode" << "\n";
+
+        int low0; int high0; int low1; int high1;
+        // handle the case that operand 0 is constant
+        if (isa<ConstantInt>(Ops[0])) {
+            if (auto *CI = dyn_cast<ConstantInt>(Ops[0])) {
+                errs() << "value" << "\n";
+                int64_t v = CI->getSExtValue();
+                errs() << v << "\n";
+
+                low0 = v;
+                high0 = v;
+
+            }
+        }
+        else {
+            Instruction *instruction = dyn_cast<Instruction>(Ops[0]);
+            auto pair0 = intervalMap->find(instruction);
+            low0 = pair0->second.low;
+            high0 = pair0->second.high;
+        }
 
 
-//    auto oc = I->getOpcode();
+        // handle the case that operand 1 is constant
+        if (isa<ConstantInt>(Ops[1])) {
+            if (auto *CI = dyn_cast<ConstantInt>(Ops[1])) {
+                errs() << "value" << "\n";
+                int64_t v = CI->getSExtValue();
+                errs() << v << "\n";
+
+                low1 = v;
+                high1 = v;
+            }
+        }
+        else {
+            Instruction *instruction1 = dyn_cast<Instruction>(Ops[1]);
+            auto pair1 = intervalMap->find(instruction1);
+            low1 = pair1->second.low;
+            high1 = pair1->second.high;
+        }
+
+        // Add Instruction
+        if (oc == Instruction::Add) {
+
+            Interval interval_new = plusInterval(low0, high0, low1, high1);
+            intervalMap->insert(make_pair(I, interval_new));
+        }
+
+        // Multiply Instruction
+        if (oc == Instruction::Mul) {
+
+            Interval interval_new = mulInterval(low0, high0, low1, high1);
+            intervalMap->insert(make_pair(I, interval_new));
+
+        }
+
+
+
+        //
+
+        return nullptr;
+    }
+
+
 //    for(const Use &OpU : I->operands()){
 //        // *some instruction has only one operand
 //        unsigned oc = I->getOpcode();
@@ -39,17 +106,7 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 //        return nullptr;
 //    }
 
-    // binary op
-//    if(Instruction::isBinaryOp(oc)){
-//        // (1,4) + ()
-//        if (oc == Instruction::And) {
-//            Interval interval0 = intervalMap.find(dyn_cast<Instruction>(Ops[0]));
-//            errs() << "Interval 0" << interval0 << "\n";
-//            Interval interval1 = intervalMap.find(Ops[1]);
-//        }
-//
-//        return nullptr;
-//    }
+
 
 
     // store instruction
@@ -82,6 +139,67 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
     return nullptr;
 }
 
-//Interval plus(Interval a, Interval b){
-//
-//}
+int mulBounded(int op1, int op2) {
+    int r1;
+    if (op1 > INT_MAX/op2) {
+        r1 = INT_MAX;
+    }
+    else if (op1 < INT_MIN/op2) {
+        r1 = INT_MIN;
+    }
+    else {
+        r1 = op1 * op2;
+    }
+    return r1;
+}
+
+Interval mulInterval(int low0, int high0, int low1, int high1) {
+    errs() << "Mul Instruction" << "\n";
+    int low;
+    int high;
+    int r1 = mulBounded(low0, low1);
+    int r2 = mulBounded(high0, low1);
+    int r3 = mulBounded(low0, high1);
+    int r4 = mulBounded(high0, high1);
+    low = min({r1, r2, r3, r4});
+    high = max({r1, r2, r3, r4});
+    Interval interval_new = {low, high};
+    errs() << "new low " << low << "\n";
+    errs() << "new high " << high << "\n";
+    return interval_new;
+}
+
+Interval plusInterval(int low0, int high0, int low1, int high1) {
+    errs() << "Add Instruction" << "\n";
+
+    int low; int high;
+    // calculate lower bound
+    if (low0 == INT_MIN || low1 == INT_MIN) {
+        low = INT_MIN;
+    }
+    else if (low0 == INT_MAX || low1 == INT_MAX) {
+        low = INT_MAX;
+    }
+    else {
+        low = low0 + low1;
+    }
+
+    errs() << "New low " << low << "\n";
+
+    // calculate upper bound
+    if (high0 == INT_MAX || high1 == INT_MAX) {
+        high = INT_MAX;
+    }
+    else if (high0 == INT_MIN || low0 == INT_MIN) {
+        high = INT_MIN;
+    }
+    else {
+        high = high0 + high1;
+    }
+
+    errs() << "New high " << high << "\n";
+
+    Interval interval_new = {low, high};
+    return interval_new;
+
+}
