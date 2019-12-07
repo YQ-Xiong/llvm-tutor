@@ -132,13 +132,13 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 }
 
 
-Interval FoldOperator(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<Instruction*, Interval> *intervalMap) {
+Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<Instruction*, Interval> *intervalMap) {
 
     unsigned oc = I->getOpcode();
     //errs() << "opcode :" << oc << "\n";
     // binary op
     if(Instruction::isBinaryOp(oc)){
-        //errs() << "Binary Opcode" << "\n";
+
 
         int low0; int high0; int low1; int high1;
         // handle the case that operand 0 is constant
@@ -182,16 +182,20 @@ Interval FoldOperator(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<Instruc
         // Add Instruction
         if (oc == Instruction::Add) {
 
-            Interval interval_new = plusInterval(low0, high0, low1, high1);
-            intervalMap->insert(make_pair(I, interval_new));
+            Interval *interval_new = plusInterval(low0, high0, low1, high1);
+            intervalMap->erase(I);
+            intervalMap->insert(make_pair(I, *interval_new));
+
             return interval_new;
         }
 
         // Multiply Instruction
         if (oc == Instruction::Mul) {
 
-            Interval interval_new = mulInterval(low0, high0, low1, high1);
-            intervalMap->insert(make_pair(I, interval_new));
+            Interval *interval_new = mulInterval(low0, high0, low1, high1);
+            intervalMap->erase(I);
+            intervalMap->insert(make_pair(I, *interval_new));
+
             return interval_new;
 
         }
@@ -199,6 +203,8 @@ Interval FoldOperator(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<Instruc
         return nullptr;
 
     }
+
+    return nullptr;
 }
 
 int mulBounded(int op1, int op2) {
@@ -215,7 +221,7 @@ int mulBounded(int op1, int op2) {
     return r1;
 }
 
-Interval mulInterval(int low0, int high0, int low1, int high1) {
+Interval *mulInterval(int low0, int high0, int low1, int high1) {
     errs() << "Mul Instruction" << "\n";
     int low;
     int high;
@@ -225,13 +231,15 @@ Interval mulInterval(int low0, int high0, int low1, int high1) {
     int r4 = mulBounded(high0, high1);
     low = min({r1, r2, r3, r4});
     high = max({r1, r2, r3, r4});
-    Interval interval_new = {low, high};
+    Interval *interval_new = new Interval;
+    interval_new->low = low,
+    interval_new->high = high;
     errs() << "new low " << low << "\n";
     errs() << "new high " << high << "\n";
     return interval_new;
 }
 
-Interval plusInterval(int low0, int high0, int low1, int high1) {
+Interval *plusInterval(int low0, int high0, int low1, int high1) {
     errs() << "Add Instruction" << "\n";
 
     int low; int high;
@@ -261,7 +269,9 @@ Interval plusInterval(int low0, int high0, int low1, int high1) {
 
     errs() << "New high " << high << "\n";
 
-    Interval interval_new = {low, high};
+    Interval *interval_new = new Interval;
+    interval_new->low = low;
+    interval_new->high = high;
     return interval_new;
 
 }
