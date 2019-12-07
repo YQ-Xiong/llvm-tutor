@@ -16,7 +16,7 @@ jobs:
           sudo pip install lit
       - name: Build llvm-tutor
         run: |
-          cd HelloWorld
+          cd IntervalAnalysis
           mkdir build && cd build
           cmake -DLT_LEGACY_SKIP_PIPELINE_REGISTRATION=On -DLT_LLVM_INSTALL_DIR="/usr/lib/llvm-9/"  ../
           make -j4
