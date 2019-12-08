@@ -29,6 +29,12 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
 Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<Instruction*, Interval> *intervalMap);
 
+Interval getIntervalFromOperand(Value* value,DenseMap<Instruction*, Interval> *intervalMap );
+
 int mulBounded(int op1, int op2);
+
 Interval *mulInterval(int low0, int high0, int low1, int high1);
+
 Interval *plusInterval(int low0, int high0, int low1, int high1);
+
+Interval *eqqInterval(Interval a, Interval b);
