@@ -7,6 +7,7 @@
 
 #endif //LLVM_TUTOR_INTERVALFOLDING_H
 
+#include "llvm/ADT/SetVector.h"
 #include "llvm/IR/Function.h"
 //#include "llvm/IR/I "
 #include "llvm/IR/LegacyPassManager.h"
@@ -15,6 +16,7 @@
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
 
 using namespace llvm;
 using namespace std;
@@ -30,5 +32,9 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<Instruction*, Interval> *intervalMap);
 
 int mulBounded(int op1, int op2);
-Interval *mulInterval(int low0, int high0, int low1, int high1);
-Interval *plusInterval(int low0, int high0, int low1, int high1);
+
+SmallSetVector<int, 8> getSigns(Interval interval);
+Interval *invInterval(Interval interval0);
+Interval *mulInterval(Interval interval0, Interval interval1);
+Interval *plusInterval(Interval interval0, Interval interval1);
+Interval *divInterval(Interval interval0, Interval interval1);

@@ -100,7 +100,6 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
 
 
-    // store instruction
 
 
     // compare instruction
@@ -109,11 +108,6 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
     }
 
-    // load
-
-    if(const auto *LI = dyn_cast<LoadInst>(I)){
-
-    }
 
     // Insert
     if(auto *IVI = dyn_cast<InsertValueInst>(I)){
@@ -136,53 +130,87 @@ Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<In
 
     unsigned oc = I->getOpcode();
     //errs() << "opcode :" << oc << "\n";
-    // binary op
-    if(Instruction::isBinaryOp(oc)){
 
-
-        int low0; int high0; int low1; int high1;
+    if (Instruction::isUnaryOp(oc)) {
+        int low0; int high0;
+        Interval interval0;
         // handle the case that operand 0 is constant
         if (isa<ConstantInt>(Ops[0])) {
-            if (auto *CI = dyn_cast<ConstantInt>(Ops[0])) {
-                errs() << "value" << "\n";
-                int64_t v = CI->getSExtValue();
-                errs() << v << "\n";
+            auto *CI = dyn_cast<ConstantInt>(Ops[0]);
+            errs() << "value" << "\n";
+            int64_t v = CI->getSExtValue();
+            errs() << v << "\n";
 
-                low0 = v;
-                high0 = v;
-
-            }
+            interval0 = {v, v};
         }
         else {
             Instruction *instruction = dyn_cast<Instruction>(Ops[0]);
             auto pair0 = intervalMap->find(instruction);
-            low0 = pair0->second.low;
-            high0 = pair0->second.high;
+            interval0 = pair0->second;
+        }
+
+        if (oc == Instruction::FNeg) {
+            Interval *interval_new = invInterval(interval0);
+            intervalMap->erase(I);
+            intervalMap->insert(make_pair(I, *interval_new));
+            return interval_new;
+        }
+        return nullptr;
+    }
+
+    // binary op
+    if (Instruction::isBinaryOp(oc)) {
+
+
+        int low0; int high0; int low1; int high1;
+        Interval interval0;
+        // handle the case that operand 0 is constant
+        if (isa<ConstantInt>(Ops[0])) {
+            auto *CI = dyn_cast<ConstantInt>(Ops[0]);
+            errs() << "value" << "\n";
+            int64_t v = CI->getSExtValue();
+            errs() << v << "\n";
+
+            interval0 = {v, v};
+        }
+        else {
+            Instruction *instruction = dyn_cast<Instruction>(Ops[0]);
+            auto pair0 = intervalMap->find(instruction);
+            interval0 = pair0->second;
         }
 
 
         // handle the case that operand 1 is constant
+        Interval interval1;
         if (isa<ConstantInt>(Ops[1])) {
-            if (auto *CI = dyn_cast<ConstantInt>(Ops[1])) {
-                //errs() << "value" << "\n";
-                int64_t v = CI->getSExtValue();
-                errs() << v << "\n";
+            auto *CI = dyn_cast<ConstantInt>(Ops[1]);
+            //errs() << "value" << "\n";
+            int64_t v = CI->getSExtValue();
+            errs() << v << "\n";
 
-                low1 = v;
-                high1 = v;
-            }
+            interval1 = {v, v};
         }
         else {
             Instruction *instruction1 = dyn_cast<Instruction>(Ops[1]);
             auto pair1 = intervalMap->find(instruction1);
-            low1 = pair1->second.low;
-            high1 = pair1->second.high;
+            interval1 = pair1->second;
         }
 
         // Add Instruction
         if (oc == Instruction::Add) {
 
-            Interval *interval_new = plusInterval(low0, high0, low1, high1);
+            errs() << "Interval 0 low" << interval0.low << "\n";
+            Interval *interval_new = plusInterval(interval0, interval1);
+            intervalMap->erase(I);
+            intervalMap->insert(make_pair(I, *interval_new));
+
+            return interval_new;
+        }
+
+        // Subtract Instruction
+        if (oc == Instruction::Sub) {
+            Interval *interval1_inv = invInterval(interval1);
+            Interval *interval_new = plusInterval(interval0, *interval1_inv);
             intervalMap->erase(I);
             intervalMap->insert(make_pair(I, *interval_new));
 
@@ -192,13 +220,26 @@ Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<In
         // Multiply Instruction
         if (oc == Instruction::Mul) {
 
-            Interval *interval_new = mulInterval(low0, high0, low1, high1);
+            Interval *interval_new = mulInterval(interval0, interval1);
             intervalMap->erase(I);
             intervalMap->insert(make_pair(I, *interval_new));
 
             return interval_new;
 
         }
+
+        // Divide Instruction
+        if (oc == Instruction::SDiv) {
+            Interval *interval_new = divInterval(interval0, interval1);
+            intervalMap->erase(I);
+            intervalMap->insert(make_pair(I, *interval_new));
+
+            errs() << "after insert ";
+
+            return interval_new;
+        }
+
+
 
         return nullptr;
 
@@ -209,19 +250,58 @@ Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<In
 
 int mulBounded(int op1, int op2) {
     int r1;
-    if (op1 > INT_MAX/op2) {
+    if (op1 > INT_MAX / op2) {
         r1 = INT_MAX;
-    }
-    else if (op1 < INT_MIN/op2) {
+    } else if (op1 < INT_MIN / op2) {
         r1 = INT_MIN;
-    }
-    else {
+    } else {
         r1 = op1 * op2;
     }
     return r1;
 }
 
-Interval *mulInterval(int low0, int high0, int low1, int high1) {
+SmallSetVector<int, 8> getSigns(Interval interval) {
+    SmallSetVector<int, 8> vector;
+    if (interval.low < -1 && -1 < interval.high) {
+        vector.insert(-1);
+    }
+    else if (interval.low < 1 && 1 < interval.high) {
+        vector.insert(1);
+    }
+    vector.insert(interval.low);
+    vector.insert(interval.high);
+
+    return vector;
+}
+
+Interval *invInterval(Interval interval0) {
+    int low0 = interval0.low; int high0 = interval0.high;
+    errs() << "FNeg Instruction" << "\n";
+    int low; int high;
+    if (low0 == INT_MIN && high0 == INT_MAX) {
+        low = INT_MIN;
+        high = INT_MAX;
+    }
+    else if (low0 == INT_MIN) {
+        low = -high0;
+        high = INT_MAX;
+    }
+    else if (high0 == INT_MAX) {
+        low = INT_MIN;
+        high = -low0;
+    }
+    else {
+        low = -high0;
+        high = -low0;
+    }
+    Interval *interval_new = new Interval;
+    interval_new->low = low;
+    interval_new->high = high;
+    return interval_new;
+}
+
+Interval *mulInterval(Interval interval0, Interval interval1) {
+    int low0 = interval0.low; int high0 = interval0.high; int low1 = interval1.low; int high1 = interval1.high;
     errs() << "Mul Instruction" << "\n";
     int low;
     int high;
@@ -239,9 +319,11 @@ Interval *mulInterval(int low0, int high0, int low1, int high1) {
     return interval_new;
 }
 
-Interval *plusInterval(int low0, int high0, int low1, int high1) {
+Interval *plusInterval(Interval interval0, Interval interval1) {
+    int low0 = interval0.low; int high0 = interval0.high; int low1 = interval1.low; int high1 = interval1.high;
     errs() << "Add Instruction" << "\n";
-
+    errs() << "low 0 " << low0;
+    errs() << "low 1 " << low1;
     int low; int high;
     // calculate lower bound
     if (low0 == INT_MIN || low1 == INT_MIN) {
@@ -274,4 +356,31 @@ Interval *plusInterval(int low0, int high0, int low1, int high1) {
     interval_new->high = high;
     return interval_new;
 
+}
+
+Interval *divInterval(Interval interval0, Interval interval1) {
+    errs() << "Divide Instruction" << "\n";
+    int low0 = interval0.low;
+    int high0 = interval0.high;
+    int low1 = interval1.low;
+    int high1 = interval1.high;
+    int low = INT_MAX;
+    int high = INT_MIN;
+
+    errs() << "Get signs \n";
+    SmallSetVector<int, 8> signs = getSigns(interval1);
+
+    while (!signs.empty()) {
+        int value = signs.pop_back_val();
+        low = min({low, low0/value, high0/value});
+        high = max({high, low0/value, high0/value});
+        errs() << "value " << value << "\n";
+    }
+
+    errs() << "new low " << low << "\n";
+    errs() << "new high " << high << "\n";
+    Interval *interval_new = new Interval;
+    interval_new->low = low;
+    interval_new->high = high;
+    return interval_new;
 }
