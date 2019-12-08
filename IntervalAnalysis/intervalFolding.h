@@ -31,6 +31,8 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
 Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<Instruction*, Interval> *intervalMap);
 
+Interval getIntervalFromOperand(Value* value,DenseMap<Instruction*, Interval> *intervalMap );
+
 int mulBounded(int op1, int op2);
 
 SmallSetVector<int, 8> getSigns(Interval interval);
@@ -38,3 +40,5 @@ Interval *invInterval(Interval interval0);
 Interval *mulInterval(Interval interval0, Interval interval1);
 Interval *plusInterval(Interval interval0, Interval interval1);
 Interval *divInterval(Interval interval0, Interval interval1);
+
+Interval *eqqInterval(Interval a, Interval b);

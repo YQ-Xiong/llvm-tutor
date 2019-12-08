@@ -32,6 +32,8 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
             }
             errs() << pointer << "\t" << "value:"<< num << "\n";
 
+            Interval* res = (Interval * )&i;
+            return res;
             
         }else {  //case 2
             // store the value of previous variable into current variable
@@ -49,30 +51,36 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
             }else{
                 errs() << "error in store instruction";
             }
+            Interval* res = (Interval * )&i;
+            return res;
 
         }
     }
 
-    if(auto *LI = dyn_cast<LoadInst>(I)){
-        Instruction* pointer = cast<Instruction>(LI->getPointerOperand());
+    if(auto *LI = dyn_cast<LoadInst>(I)) {
+        Instruction *pointer = cast<Instruction>(LI->getPointerOperand());
         Interval i;
-        if(intervalMap->count(pointer)){
+        if (intervalMap->count(pointer)) {
             i = intervalMap->lookup(pointer);
             intervalMap->insert(make_pair(LI, i));
-            if(intervalMap->count(LI)) {
+            if (intervalMap->count(LI)) {
                 intervalMap->erase(LI);
                 intervalMap->insert(make_pair(LI, i));
-            }else{
+            } else {
                 intervalMap->insert(make_pair(LI, i));
             }
 
-            errs() << LI << "\t" << "load value:"<< intervalMap->lookup(LI).high << "\n";
-        }else{
+            errs() << LI << "\t" << "load value:" << intervalMap->lookup(LI).high << "\n";
+        } else {
             errs() << "error in load instruction";
         }
 
+        Interval* res = (Interval * )&i;
+        return res;
 
     }
+
+
 
 
     // second calculate operands
@@ -85,26 +93,55 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
         Ops.push_back(&OpU);
     }
 
-//    for(const Use &OpU : I->operands()){
-//        // *some instruction has only one operand
-//        unsigned oc = I->getOpcode();
-//        if(Instruction::isUnaryOp(oc)){
-//            return nullptr;
-//        }
-//
-//    // unary op
-//    if(Instruction::isUnaryOp(oc)){
-//        return nullptr;
-//    }
-
-
-
-
 
 
     // compare instruction
 
     if(const auto *CI = dyn_cast<CmpInst>(I)){
+//        ICMP_EQ    = 32,  ///< equal
+//        ICMP_NE    = 33,  ///< not equal
+//        ICMP_UGT   = 34,  ///< unsigned greater than
+//        ICMP_UGE   = 35,  ///< unsigned greater or equal
+//        ICMP_ULT   = 36,  ///< unsigned less than
+//        ICMP_ULE   = 37,  ///< unsigned less or equal
+//        ICMP_SGT   = 38,  ///< signed greater than
+//        ICMP_SGE   = 39,  ///< signed greater or equal
+//        ICMP_SLT   = 40,  ///< signed less than
+//        ICMP_SLE   = 41,  ///< signed less or equal
+        auto p = CI->getPredicate();
+        errs()<< "predicate" << p << "\n";
+
+        for (const Use &OpU : I->operands()) {
+            // Fold the Instruction's operands.
+                        errs() << "operand";
+                        errs() << *OpU << "\n";
+        }
+
+        if(p == CmpInst::ICMP_EQ){
+            //Interval i1=
+            auto value1 = CI->getOperand(0);
+            auto value2 = CI->getOperand(1);
+            errs() << *value1 << "\n";
+            errs() << *value2 << "\n";
+
+
+            Interval interval1 = getIntervalFromOperand(value1, intervalMap);
+            Interval interval2 = getIntervalFromOperand(value2, intervalMap);
+            errs() << "get interval";
+            return eqqInterval(interval1, interval2);
+        }
+
+//        if(p == CmpInst::ICMP_SGT){
+//            auto value1 = CI->getOperand(0);
+//            auto value2 = CI->getOperand(1);
+//
+//            pair<Interval, Interval> pr = getIntervalFromOperands(value1, value2, intervalMap);
+//            Interval interval1 = pr.first;
+//            Interval interval2 = pr.second;
+//        }
+
+
+
 
     }
 
@@ -124,6 +161,26 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
     return foldInstOperands(I, Ops, intervalMap);
 
 }
+
+
+Interval getIntervalFromOperand(Value* value ,DenseMap<Instruction*, Interval> *intervalMap ){
+    if(isa<ConstantInt>(value)){
+
+        auto c = dyn_cast<ConstantInt>(value);
+        int64_t v = c->getSExtValue();
+        Interval interval = {v, v};
+        return interval;
+
+   }else{
+        errs() << "reach 1\n";
+        errs() << "cast instruction\n";
+        Instruction* inst = cast<Instruction>(value);
+        Interval interval = intervalMap->lookup(inst);
+
+        return interval;
+    }
+}
+
 
 
 Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<Instruction*, Interval> *intervalMap) {
@@ -372,8 +429,8 @@ Interval *divInterval(Interval interval0, Interval interval1) {
 
     while (!signs.empty()) {
         int value = signs.pop_back_val();
-        low = min({low, low0/value, high0/value});
-        high = max({high, low0/value, high0/value});
+        low = min({low, low0 / value, high0 / value});
+        high = max({high, low0 / value, high0 / value});
         errs() << "value " << value << "\n";
     }
 
@@ -383,4 +440,18 @@ Interval *divInterval(Interval interval0, Interval interval1) {
     interval_new->low = low;
     interval_new->high = high;
     return interval_new;
+}
+
+Interval* eqqInterval(Interval a, Interval b){
+    Interval* i = new Interval;
+    if(a.low == a.high && a.high == b.low && b.low == b.high) {
+        i->low = 1;
+        i->high = 1;
+        return i;
+    }
+    else{
+        i->low = 0;
+        i->high = 1;
+        return i;
+    }
 }
