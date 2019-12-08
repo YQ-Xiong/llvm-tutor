@@ -9,7 +9,6 @@
 
 #include "llvm/ADT/SetVector.h"
 #include "llvm/IR/Function.h"
-//#include "llvm/IR/I "
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/Pass.h"
 #include "llvm/Passes/PassBuilder.h"
@@ -31,7 +30,7 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
 Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<Instruction*, Interval> *intervalMap);
 
-Interval getIntervalFromOperand(Value* value,DenseMap<Instruction*, Interval> *intervalMap );
+Interval getIntervalFromOperand(Value* value,DenseMap<Instruction*, Interval> *intervalMap);
 
 int mulBounded(int op1, int op2);
 

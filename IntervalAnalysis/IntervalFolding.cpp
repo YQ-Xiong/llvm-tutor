@@ -1,16 +1,12 @@
 //
 // Created by Youyou Tu on 2019-12-04.
 //
-#include "intervalFolding.h"
+#include "IntervalFolding.h"
 
 Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interval> *intervalMap){
 
     // check if terminator (ret),
     // first check phi node
-    errs() << I << "\n";
-
-
-
     if( auto *SI = dyn_cast<StoreInst>(I)){
         // there are two cases of store instruction
         // case 1: store instruction i32 %1, one integer, one variable
@@ -80,20 +76,12 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
     }
 
-
-
-
     // second calculate operands
 
     SmallVector<Use*, 8> Ops;
-
     for(Use &OpU : I->operands()){
-//        Instruction *s = dyn_cast<Instruction>(OpU);
-        //errs() << "Use " << *OpU << "\n";
         Ops.push_back(&OpU);
     }
-
-
 
     // compare instruction
 
@@ -163,48 +151,14 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 }
 
 
-Interval getIntervalFromOperand(Value* value ,DenseMap<Instruction*, Interval> *intervalMap ){
-    if(isa<ConstantInt>(value)){
-
-        auto c = dyn_cast<ConstantInt>(value);
-        int64_t v = c->getSExtValue();
-        Interval interval = {v, v};
-        return interval;
-
-   }else{
-        errs() << "reach 1\n";
-        errs() << "cast instruction\n";
-        Instruction* inst = cast<Instruction>(value);
-        Interval interval = intervalMap->lookup(inst);
-
-        return interval;
-    }
-}
-
-
-
 Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<Instruction*, Interval> *intervalMap) {
 
     unsigned oc = I->getOpcode();
     //errs() << "opcode :" << oc << "\n";
 
     if (Instruction::isUnaryOp(oc)) {
-        int low0; int high0;
-        Interval interval0;
-        // handle the case that operand 0 is constant
-        if (isa<ConstantInt>(Ops[0])) {
-            auto *CI = dyn_cast<ConstantInt>(Ops[0]);
-            errs() << "value" << "\n";
-            int64_t v = CI->getSExtValue();
-            errs() << v << "\n";
 
-            interval0 = {v, v};
-        }
-        else {
-            Instruction *instruction = dyn_cast<Instruction>(Ops[0]);
-            auto pair0 = intervalMap->find(instruction);
-            interval0 = pair0->second;
-        }
+        Interval interval0 = getIntervalFromOperand(dyn_cast<Value>(Ops[0]), intervalMap);
 
         if (oc == Instruction::FNeg) {
             Interval *interval_new = invInterval(interval0);
@@ -219,39 +173,9 @@ Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<In
     if (Instruction::isBinaryOp(oc)) {
 
 
-        int low0; int high0; int low1; int high1;
-        Interval interval0;
-        // handle the case that operand 0 is constant
-        if (isa<ConstantInt>(Ops[0])) {
-            auto *CI = dyn_cast<ConstantInt>(Ops[0]);
-            errs() << "value" << "\n";
-            int64_t v = CI->getSExtValue();
-            errs() << v << "\n";
+        Interval interval0 = getIntervalFromOperand(dyn_cast<Value>(Ops[0]), intervalMap);
 
-            interval0 = {v, v};
-        }
-        else {
-            Instruction *instruction = dyn_cast<Instruction>(Ops[0]);
-            auto pair0 = intervalMap->find(instruction);
-            interval0 = pair0->second;
-        }
-
-
-        // handle the case that operand 1 is constant
-        Interval interval1;
-        if (isa<ConstantInt>(Ops[1])) {
-            auto *CI = dyn_cast<ConstantInt>(Ops[1]);
-            //errs() << "value" << "\n";
-            int64_t v = CI->getSExtValue();
-            errs() << v << "\n";
-
-            interval1 = {v, v};
-        }
-        else {
-            Instruction *instruction1 = dyn_cast<Instruction>(Ops[1]);
-            auto pair1 = intervalMap->find(instruction1);
-            interval1 = pair1->second;
-        }
+        Interval interval1 = getIntervalFromOperand(dyn_cast<Value>(Ops[1]), intervalMap);
 
         // Add Instruction
         if (oc == Instruction::Add) {
@@ -291,8 +215,6 @@ Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<In
             intervalMap->erase(I);
             intervalMap->insert(make_pair(I, *interval_new));
 
-            errs() << "after insert ";
-
             return interval_new;
         }
 
@@ -303,6 +225,24 @@ Interval *foldInstOperands(Instruction *I, SmallVector<Use*, 8> Ops, DenseMap<In
     }
 
     return nullptr;
+}
+
+Interval getIntervalFromOperand(Value* value ,DenseMap<Instruction*, Interval> *intervalMap ){
+    if(isa<ConstantInt>(value)){
+
+        auto c = dyn_cast<ConstantInt>(value);
+        int64_t v = c->getSExtValue();
+        Interval interval = {v, v};
+        return interval;
+
+    }else{
+        errs() << "reach 1\n";
+        errs() << "cast instruction\n";
+        Instruction* inst = cast<Instruction>(value);
+        Interval interval = intervalMap->lookup(inst);
+
+        return interval;
+    }
 }
 
 int mulBounded(int op1, int op2) {
@@ -379,8 +319,7 @@ Interval *mulInterval(Interval interval0, Interval interval1) {
 Interval *plusInterval(Interval interval0, Interval interval1) {
     int low0 = interval0.low; int high0 = interval0.high; int low1 = interval1.low; int high1 = interval1.high;
     errs() << "Add Instruction" << "\n";
-    errs() << "low 0 " << low0;
-    errs() << "low 1 " << low1;
+
     int low; int high;
     // calculate lower bound
     if (low0 == INT_MIN || low1 == INT_MIN) {
@@ -424,7 +363,6 @@ Interval *divInterval(Interval interval0, Interval interval1) {
     int low = INT_MAX;
     int high = INT_MIN;
 
-    errs() << "Get signs \n";
     SmallSetVector<int, 8> signs = getSigns(interval1);
 
     while (!signs.empty()) {
