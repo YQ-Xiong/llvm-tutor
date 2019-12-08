@@ -61,16 +61,10 @@ namespace {
                 WorkListVec.push_back(&I);
             }
 
-
-
             while (!WorkList.empty()) {
                 for (auto *I : WorkListVec) {
                     errs() << "Instruction I " << *I << "\n";
-                    Interval *interval = IntervalFoldInstruction(I, &intervalMap);
-                    if (interval) {
-                        errs() << "Interval Result:  " << interval->low << "\n";
-                        errs() << "high " << interval->high << "\n";
-                    }
+                    IntervalFoldInstruction(I, &intervalMap);
 
                     for (const Use &OpU : I->operands()) {
                         // Fold the Instruction's operands.
@@ -94,13 +88,14 @@ namespace {
 //              errs() << v->getName() << "\n";
 //          }
 //            if (auto *PN = dyn_cast<PHINode>(I)) {
-//                for (Value *Incoming : PN->incoming_values()) {
-//                    // If the incoming value is undef then skip it.  Note that while we could
-//                    // skip the value if it is equal to the phi node itself we choose not to
-//                    // because that would break the rule that constant folding only applies if
-//                    // all operands are constants.
-//                    errs() << *Incoming << "\n";
-//                }
+//                errs() << "phi node" << "\n";
+////                for (Value *Incoming : PN->incoming_values()) {
+////                    // If the incoming value is undef then skip it.  Note that while we could
+////                    // skip the value if it is equal to the phi node itself we choose not to
+////                    // because that would break the rule that constant folding only applies if
+////                    // all operands are constants.
+////                    errs() << *Incoming << "\n";
+////                }
 //            }
 
 
