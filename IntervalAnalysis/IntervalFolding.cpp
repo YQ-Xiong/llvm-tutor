@@ -7,6 +7,29 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
     // check if terminator (ret),
     // first check phi node
+    if (auto *PN = dyn_cast<PHINode>(I)) {
+
+        Interval *interval = nullptr;
+
+        // we assume each incoming value is not a block
+        for (Value *Incoming : PN->incoming_values()) {
+
+            errs() << "Incoming : " << *Incoming << "\n";
+
+            Interval interval0 = getIntervalFromOperand(Incoming, intervalMap);
+            errs() << "low interval0 : " << interval0.low << "\n";
+            errs() << "high interval1 : " << interval0.high << "\n";
+            if (interval) {
+                interval = unionInterval(*interval, interval0);
+            }
+            else {
+                interval = &interval0;
+            }
+        }
+        return interval;
+        }
+
+
     if( auto *SI = dyn_cast<StoreInst>(I)){
         // there are two cases of store instruction
         // case 1: store instruction i32 %1, one integer, one variable
@@ -241,7 +264,7 @@ Interval getIntervalFromOperand(Value* value ,DenseMap<Instruction*, Interval> *
         Instruction* inst = cast<Instruction>(value);
         Interval interval = intervalMap->lookup(inst);
 
-        return interval;
+        return intgierval;
     }
 }
 
@@ -271,6 +294,7 @@ SmallSetVector<int, 8> getSigns(Interval interval) {
     return vector;
 }
 
+
 Interval *invInterval(Interval interval0) {
     int low0 = interval0.low; int high0 = interval0.high;
     errs() << "FNeg Instruction" << "\n";
@@ -293,6 +317,17 @@ Interval *invInterval(Interval interval0) {
     }
     Interval *interval_new = new Interval;
     interval_new->low = low;
+    interval_new->high = high;
+    return interval_new;
+}
+
+Interval *unionInterval(Interval interval0, Interval interval1) {
+    int low;
+    int high;
+    low = min(interval0.low, interval1.low);
+    high = max(interval0.high, interval1.high);
+    Interval *interval_new = new Interval;
+    interval_new->low = low,
     interval_new->high = high;
     return interval_new;
 }
