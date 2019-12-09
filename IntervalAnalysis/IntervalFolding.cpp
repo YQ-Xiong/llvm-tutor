@@ -264,7 +264,7 @@ Interval getIntervalFromOperand(Value* value ,DenseMap<Instruction*, Interval> *
         Instruction* inst = cast<Instruction>(value);
         Interval interval = intervalMap->lookup(inst);
 
-        return intgierval;
+        return interval;
     }
 }
 
