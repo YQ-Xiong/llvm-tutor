@@ -12,6 +12,8 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
         // case 1: store instruction i32 %1, one integer, one variable
         // case 2: store instruction %2 %3, two variables
 
+        // store instruction does not have interval
+
 
         auto value = SI->getValueOperand();
         Instruction* pointer = cast<Instruction>(SI->getPointerOperand());
@@ -26,7 +28,7 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
             }else{
                 intervalMap->insert(make_pair(pointer, i));
             }
-            errs() << pointer << "\t" << "value:"<< num << "\n";
+            //errs() << pointer << "\t" << "value:"<< num << "\n";
 
             Interval* res = (Interval * )&i;
             return res;
@@ -43,7 +45,7 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
                 }else{
                     intervalMap->insert(make_pair(pointer, i));
                 }
-                errs() << pointer << "\t" << "value:" << i.high << "\n";
+               // errs() << pointer << "\t" << "value:" << i.high << "\n";
             }else{
                 errs() << "error in store instruction";
             }
@@ -58,7 +60,7 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
         Interval i;
         if (intervalMap->count(pointer)) {
             i = intervalMap->lookup(pointer);
-            intervalMap->insert(make_pair(LI, i));
+//            intervalMap->insert(make_pair(LI, i));
             if (intervalMap->count(LI)) {
                 intervalMap->erase(LI);
                 intervalMap->insert(make_pair(LI, i));
@@ -66,7 +68,7 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
                 intervalMap->insert(make_pair(LI, i));
             }
 
-            errs() << LI << "\t" << "load value:" << intervalMap->lookup(LI).high << "\n";
+            //errs() << LI << "\t" << "load value:" << intervalMap->lookup(LI).high << "\n";
         } else {
             errs() << "error in load instruction";
         }
@@ -83,11 +85,61 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
         Ops.push_back(&OpU);
     }
 
+
+    // truncate instruction
+
+    if(auto *TI = dyn_cast<TruncInst>(I)){
+        // truc only has one operand
+        auto value = TI->getOperand(0);
+        Interval i = getIntervalFromOperand(value, intervalMap);
+        // the low and high of this interval
+
+        Type* destType = TI->getDestTy();
+        unsigned destBits = destType->getScalarSizeInBits();
+
+
+
+        i.low = castIntTo(i.low, destBits);
+        i.high = castIntTo(i.high, destBits);
+
+        if (intervalMap->count(TI)) {
+            intervalMap->erase(TI);
+            intervalMap->insert(make_pair(TI, i));
+        } else {
+            intervalMap->insert(make_pair(TI, i));
+        }
+
+        Interval* res = (Interval * )&i;
+        return res;
+
+    }
+
+    // zero extend instruction
+
+    if(auto *ZI = dyn_cast<ZExtInst>(I)){
+        // unlike truncInst, zero extend does not change the value of the interval,
+        // so we can just return the original interval
+        auto value = ZI->getOperand(0);
+        Interval i = getIntervalFromOperand(value, intervalMap);
+
+        if (intervalMap->count(ZI)) {
+            intervalMap->erase(ZI);
+            intervalMap->insert(make_pair(ZI, i));
+        } else {
+            intervalMap->insert(make_pair(ZI, i));
+        }
+
+
+
+        Interval* res = (Interval * )&i;
+        return res;
+
+    }
+
+
     // compare instruction
 
-
-
-    if(const auto *CI = dyn_cast<CmpInst>(I)){
+    if( auto *CI = dyn_cast<CmpInst>(I)){
 //        ICMP_EQ    = 32,  ///< equal
 //        ICMP_NE    = 33,  ///< not equal
 //        ICMP_UGT   = 34,  ///< unsigned greater than
@@ -101,11 +153,8 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
         auto p = CI->getPredicate();
         errs()<< "predicate" << p << "\n";
 
-        for (const Use &OpU : I->operands()) {
-            // Fold the Instruction's operands.
-                        errs() << "operand";
-                        errs() << *OpU << "\n";
-        }
+
+
 
         if(p == CmpInst::ICMP_EQ){
             //Interval i1=
@@ -117,8 +166,16 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
             Interval interval1 = getIntervalFromOperand(value1, intervalMap);
             Interval interval2 = getIntervalFromOperand(value2, intervalMap);
-            errs() << "get interval";
-            return eqqInterval(interval1, interval2);
+
+            Interval* res = eqqInterval(interval1, interval2);
+            if (intervalMap->count(CI)) {
+                intervalMap->erase(CI);
+                intervalMap->insert(make_pair(CI, *res));
+            } else {
+                intervalMap->insert(make_pair(CI, *res));
+            }
+
+            return res;
         }
 
         if(p == CmpInst::ICMP_SGT){
@@ -127,11 +184,20 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
             Interval interval1 = getIntervalFromOperand(value1, intervalMap);
             Interval interval2 = getIntervalFromOperand(value2, intervalMap);
-            return gtInterval(interval1, interval2);
+
+            Interval* res = gtInterval(interval1, interval2);
+            if (intervalMap->count(CI)) {
+                intervalMap->erase(CI);
+                intervalMap->insert(make_pair(CI, *res));
+            } else {
+                intervalMap->insert(make_pair(CI, *res));
+            }
+
+            return res;
         }
-
-
-
+        /*
+         * Todo:  We could implement more compare instruction
+         */
 
     }
 
@@ -406,4 +472,22 @@ Interval* gtInterval(Interval a, Interval b){
         i->high = 1;
     }
     return i;
+}
+
+
+int64_t castIntTo (int64_t num, unsigned numOfBits){
+    int64_t tmp = 1;
+    int64_t mask = 1;
+    int i = 1;
+    while( i < numOfBits - 1){
+        mask = mask | tmp;
+        tmp = tmp << 1;
+        i++;
+    }
+    errs() << "the mask is " << mask << "\n";
+
+    int64_t res = num & mask;
+    errs() << "the res is " << res << "\n";
+    return res;
+
 }

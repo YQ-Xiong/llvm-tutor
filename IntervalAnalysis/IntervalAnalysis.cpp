@@ -65,22 +65,13 @@ namespace {
                 for (auto *I : WorkListVec) {
                     errs() << "Instruction I " << *I << "\n";
                     IntervalFoldInstruction(I, &intervalMap);
+                    Interval interval = intervalMap.lookup(I);
 
-                    for (const Use &OpU : I->operands()) {
-                        // Fold the Instruction's operands.
-//                        errs() << "operand";
-//                        errs() << *OpU << "\n";
-                    }
+                    errs() << "printing interval : ["<< interval.low << ", " << interval.high << "]" << "\n";
 
-                    if(const auto *SI = dyn_cast<StoreInst>(I)){
-//                        errs() << "pointer";
-                        //Use &PointerU = SI.getPointerOperand();
-                        const Instruction *pointer = cast<Instruction>(SI->getPointerOperand());
-//                        errs() << *pointer << "\n";
-//
-//                        errs() << "value";
-//                        errs() << *SI->getValueOperand() << "\n";
-                    }
+
+
+
 
 
 //          for(auto op= I->op_begin(); op != I->op_end(); op++){
@@ -89,13 +80,13 @@ namespace {
 //          }
 //            if (auto *PN = dyn_cast<PHINode>(I)) {
 //                errs() << "phi node" << "\n";
-////                for (Value *Incoming : PN->incoming_values()) {
-////                    // If the incoming value is undef then skip it.  Note that while we could
-////                    // skip the value if it is equal to the phi node itself we choose not to
-////                    // because that would break the rule that constant folding only applies if
-////                    // all operands are constants.
-////                    errs() << *Incoming << "\n";
-////                }
+//                for (Value *Incoming : PN->incoming_values()) {
+//                    // If the incoming value is undef then skip it.  Note that while we could
+//                    // skip the value if it is equal to the phi node itself we choose not to
+//                    // because that would break the rule that constant folding only applies if
+//                    // all operands are constants.
+//                    errs() << *Incoming << "\n";
+//                }
 //            }
 
 
