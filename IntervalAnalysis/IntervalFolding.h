@@ -42,3 +42,4 @@ Interval *plusInterval(Interval interval0, Interval interval1);
 Interval *divInterval(Interval interval0, Interval interval1);
 
 Interval *eqqInterval(Interval a, Interval b);
+Interval *gtInterval(Interval a, Interval b);

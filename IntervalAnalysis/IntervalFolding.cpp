@@ -108,6 +108,8 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 
     // compare instruction
 
+
+
     if(const auto *CI = dyn_cast<CmpInst>(I)){
 //        ICMP_EQ    = 32,  ///< equal
 //        ICMP_NE    = 33,  ///< not equal
@@ -142,14 +144,14 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
             return eqqInterval(interval1, interval2);
         }
 
-//        if(p == CmpInst::ICMP_SGT){
-//            auto value1 = CI->getOperand(0);
-//            auto value2 = CI->getOperand(1);
-//
-//            pair<Interval, Interval> pr = getIntervalFromOperands(value1, value2, intervalMap);
-//            Interval interval1 = pr.first;
-//            Interval interval2 = pr.second;
-//        }
+        if(p == CmpInst::ICMP_SGT){
+            auto value1 = CI->getOperand(0);
+            auto value2 = CI->getOperand(1);
+
+            Interval interval1 = getIntervalFromOperand(value1, intervalMap);
+            Interval interval2 = getIntervalFromOperand(value2, intervalMap);
+            return gtInterval(interval1, interval2);
+        }
 
 
 
@@ -259,8 +261,6 @@ Interval getIntervalFromOperand(Value* value ,DenseMap<Instruction*, Interval> *
         return interval;
 
     }else{
-        errs() << "reach 1\n";
-        errs() << "cast instruction\n";
         Instruction* inst = cast<Instruction>(value);
         Interval interval = intervalMap->lookup(inst);
 
@@ -420,11 +420,25 @@ Interval* eqqInterval(Interval a, Interval b){
     if(a.low == a.high && a.high == b.low && b.low == b.high) {
         i->low = 1;
         i->high = 1;
-        return i;
     }
     else{
         i->low = 0;
         i->high = 1;
-        return i;
     }
+    return i;
+}
+
+Interval* gtInterval(Interval a, Interval b){
+    Interval* i = new Interval;
+    if(a.high < b.low){
+        i->low = 0;
+        i->high = 0;
+    }else if(a.low > b.high){
+        i->low = 1;
+        i->high = 1;
+    }else{
+        i->low = 0;
+        i->high = 1;
+    }
+    return i;
 }
