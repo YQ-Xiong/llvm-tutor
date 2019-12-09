@@ -36,6 +36,7 @@ int mulBounded(int op1, int op2);
 
 SmallSetVector<int, 8> getSigns(Interval interval);
 Interval *invInterval(Interval interval0);
+Interval *unionInterval(Interval interval0, Interval interval1);
 Interval *mulInterval(Interval interval0, Interval interval1);
 Interval *plusInterval(Interval interval0, Interval interval1);
 Interval *divInterval(Interval interval0, Interval interval1);
