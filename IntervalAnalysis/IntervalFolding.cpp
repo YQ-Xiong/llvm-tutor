@@ -1,7 +1,16 @@
 //
 // Created by Youyou Tu on 2019-12-04.
 //
+
 #include "IntervalFolding.h"
+
+
+
+
+
+/* Todo: deal with br instruction for loop and phi node
+ * Todo: take care of parameters of function
+ */
 
 Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interval> *intervalMap){
 
@@ -14,11 +23,11 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
         // we assume each incoming value is not a block
         for (Value *Incoming : PN->incoming_values()) {
 
-            errs() << "Incoming : " << *Incoming << "\n";
+            //errs() << "Incoming : " << *Incoming << "\n";
 
             Interval interval0 = getIntervalFromOperand(Incoming, intervalMap);
-            errs() << "low interval0 : " << interval0.low << "\n";
-            errs() << "high interval1 : " << interval0.high << "\n";
+            //errs() << "low interval0 : " << interval0.low << "\n";
+            //errs() << "high interval1 : " << interval0.high << "\n";
             if (interval) {
                 interval = unionInterval(*interval, interval0);
             }
@@ -174,17 +183,15 @@ Interval *IntervalFoldInstruction(Instruction *I, DenseMap<Instruction*, Interva
 //        ICMP_SLT   = 40,  ///< signed less than
 //        ICMP_SLE   = 41,  ///< signed less or equal
         auto p = CI->getPredicate();
-        errs()<< "predicate" << p << "\n";
-
-
+        //errs()<< "predicate" << p << "\n";
 
 
         if(p == CmpInst::ICMP_EQ){
             //Interval i1=
             auto value1 = CI->getOperand(0);
             auto value2 = CI->getOperand(1);
-            errs() << *value1 << "\n";
-            errs() << *value2 << "\n";
+            //errs() << *value1 << "\n";
+            //errs() << *value2 << "\n";
 
 
             Interval interval1 = getIntervalFromOperand(value1, intervalMap);
@@ -326,11 +333,16 @@ Interval getIntervalFromOperand(Value* value ,DenseMap<Instruction*, Interval> *
         Interval interval = {v, v};
         return interval;
 
-    }else{
-        Instruction* inst = cast<Instruction>(value);
-        Interval interval = intervalMap->lookup(inst);
+    }else if(isa<Instruction>(value) ) {
+            Instruction *inst = cast<Instruction>(value);
+            Interval interval = intervalMap->lookup(inst);
 
-        return interval;
+            return interval;
+        }
+
+    else{
+        Interval res = {INT_MIN, INT_MAX};
+        return res;
     }
 }
 
@@ -363,7 +375,7 @@ SmallSetVector<int, 8> getSigns(Interval interval) {
 
 Interval *invInterval(Interval interval0) {
     int low0 = interval0.low; int high0 = interval0.high;
-    errs() << "FNeg Instruction" << "\n";
+    //errs() << "FNeg Instruction" << "\n";
     int low; int high;
     if (low0 == INT_MIN && high0 == INT_MAX) {
         low = INT_MIN;
@@ -412,14 +424,14 @@ Interval *mulInterval(Interval interval0, Interval interval1) {
     Interval *interval_new = new Interval;
     interval_new->low = low,
     interval_new->high = high;
-    errs() << "new low " << low << "\n";
-    errs() << "new high " << high << "\n";
+    //errs() << "new low " << low << "\n";
+    //errs() << "new high " << high << "\n";
     return interval_new;
 }
 
 Interval *plusInterval(Interval interval0, Interval interval1) {
     int low0 = interval0.low; int high0 = interval0.high; int low1 = interval1.low; int high1 = interval1.high;
-    errs() << "Add Instruction" << "\n";
+    //errs() << "Add Instruction" << "\n";
 
     int low; int high;
     // calculate lower bound
@@ -433,7 +445,7 @@ Interval *plusInterval(Interval interval0, Interval interval1) {
         low = low0 + low1;
     }
 
-    errs() << "New low " << low << "\n";
+    //errs() << "New low " << low << "\n";
 
     // calculate upper bound
     if (high0 == INT_MAX || high1 == INT_MAX) {
@@ -446,7 +458,7 @@ Interval *plusInterval(Interval interval0, Interval interval1) {
         high = high0 + high1;
     }
 
-    errs() << "New high " << high << "\n";
+    //errs() << "New high " << high << "\n";
 
     Interval *interval_new = new Interval;
     interval_new->low = low;
@@ -456,7 +468,7 @@ Interval *plusInterval(Interval interval0, Interval interval1) {
 }
 
 Interval *divInterval(Interval interval0, Interval interval1) {
-    errs() << "Divide Instruction" << "\n";
+    //errs() << "Divide Instruction" << "\n";
     int low0 = interval0.low;
     int high0 = interval0.high;
     int low1 = interval1.low;
@@ -470,11 +482,11 @@ Interval *divInterval(Interval interval0, Interval interval1) {
         int value = signs.pop_back_val();
         low = min({low, low0 / value, high0 / value});
         high = max({high, low0 / value, high0 / value});
-        errs() << "value " << value << "\n";
+        //errs() << "value " << value << "\n";
     }
 
-    errs() << "new low " << low << "\n";
-    errs() << "new high " << high << "\n";
+    //errs() << "new low " << low << "\n";
+    //errs() << "new high " << high << "\n";
     Interval *interval_new = new Interval;
     interval_new->low = low;
     interval_new->high = high;
@@ -519,10 +531,10 @@ int64_t castIntTo (int64_t num, unsigned numOfBits){
         tmp = tmp << 1;
         i++;
     }
-    errs() << "the mask is " << mask << "\n";
+    //errs() << "the mask is " << mask << "\n";
 
     int64_t res = num & mask;
-    errs() << "the res is " << res << "\n";
+    //errs() << "the res is " << res << "\n";
     return res;
 
 }

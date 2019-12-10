@@ -63,11 +63,14 @@ namespace {
 
             while (!WorkList.empty()) {
                 for (auto *I : WorkListVec) {
-                    errs() << "Instruction I " << *I << "\n";
+                    errs()  << *I ;
                     IntervalFoldInstruction(I, &intervalMap);
                     Interval interval = intervalMap.lookup(I);
-
-                    errs() << "printing interval : ["<< interval.low << ", " << interval.high << "]" << "\n";
+                    if(interval.low != INT_MIN && interval.high != INT_MAX){
+                        errs() << " >> "<< "Interval : [" << interval.low << ", " << interval.high << "]" << "\n";
+                    }else{
+                        errs() << "\n";
+                    }
 
 
 
