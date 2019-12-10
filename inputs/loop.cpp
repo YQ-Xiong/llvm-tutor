@@ -8,11 +8,11 @@ int main() {
     int k = 0;
     while (k < 5) {
         if (j < 3) {
-            j = i;
+            j = j + 1;
             k = k+1;
         }
         else {
-            j = k;
+            //j = k;
             k = k+2;
         }
     }
